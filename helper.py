@@ -1,4 +1,5 @@
 import os
+import pandas as pd
 
 FILE_NAMES = {
     "hrefs": "./data/hrefs.txt",
@@ -29,9 +30,8 @@ def get_hrefs() -> list:
     """
     if not os.path.exists(FILE_NAMES["hrefs"]):
         print(f"File {FILE_NAMES['hrefs']} does not exist.")
-        return []  # Return an empty list if the file does not exist
+        return None  # Return an empty list if the file does not exist
 
-    print(f"Reading hrefs from {FILE_NAMES['hrefs']}...")
-    with open(FILE_NAMES["hrefs"], "r") as file:
-        hrefs = file.readlines()
-        return [href.strip() for href in hrefs if href.strip()]
+    df = pd.read_csv(FILE_NAMES["hrefs"])
+    print(f"Loaded {len(df)} hrefs from {FILE_NAMES['hrefs']}.")
+    return df["link"].tolist() if "link" in df.columns else None
