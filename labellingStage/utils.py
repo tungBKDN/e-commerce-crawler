@@ -126,8 +126,8 @@ def plot_confidence(df: pd.DataFrame):
     df = df[df['confidence'].notna() & (df['confidence'] != 0)]
     total_labeled = len(df[df['labeled'] == True])
 
-    mean_confidence = df['confidence'].mean()
-    med_confidence = df['confidence'].median()
+    mean_confidence = df[df['labeled'] != True]['confidence'].mean()
+    med_confidence = df[df['labeled'] != True]['confidence'].median()
     print(f"Mean confidence: {mean_confidence}")
     print(f"Median confidence: {med_confidence}")
 

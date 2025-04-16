@@ -5,7 +5,7 @@ from activeLearning import EmotionClassifierNB
 # Vars
 df = u.load_data()
 labels = u.get_labels()
-ids = u.random_pooling(df, n=20)
+ids = u.random_pooling(df, n=25)
 
 annos = u.display(ids, df, labels)
 print("Updating...")
