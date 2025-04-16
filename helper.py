@@ -35,3 +35,29 @@ def get_hrefs() -> list:
     df = pd.read_csv(FILE_NAMES["hrefs"])
     print(f"Loaded {len(df)} hrefs from {FILE_NAMES['hrefs']}.")
     return df["link"].tolist() if "link" in df.columns else None
+
+def get_videoid_from_href(href: str) -> str:
+    """
+    Extract the video ID from the href.
+    """
+    if href is None:
+        return None
+
+    and_index = href.find("&")
+    start = href.find("v=") + 2
+    if and_index == -1:
+        return href[start:]
+    return href[start:and_index]
+
+def get_video(index: int) -> tuple:
+    """
+    Get the video ID and href from the list of hrefs.
+    """
+    if not os.path.exists(FILE_NAMES["hrefs"]):
+        print(f"File {FILE_NAMES['hrefs']} does not exist.")
+        return None  # Return an empty list if the file does not exist
+
+    df = pd.read_csv(FILE_NAMES["hrefs"])
+    row = df.iloc[index]
+    return row["prefix"].replace("+", " "), get_videoid_from_href(row["link"])
+
