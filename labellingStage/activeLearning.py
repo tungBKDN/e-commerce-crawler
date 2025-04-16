@@ -24,6 +24,8 @@ class EmotionClassifierNB:
         """
         Train the classifier on preprocessed texts and their labels.
         """
+        print(f"Length of texts: {len(texts)}")
+        print(f"Length of labels: {len(labels)}")
         self.model.fit(texts, labels)
         self.is_trained = True
         print("✅ Model trained on", len(texts), "samples.")
@@ -49,7 +51,10 @@ class EmotionClassifierNB:
         if text_col not in df.columns:
             raise ValueError(f"'{text_col}' column not found in the DataFrame.")
 
-        results = self.predict(df[text_col].tolist())
-        df["predicted_label"] = [r[0] for r in results]
-        df["confidence"] = [r[1] for r in results]
+        idx = df[df['labeled'] != True].index
+        texts = df.loc[idx, text_col].tolist()
+        predictions = self.predict(texts)
+        predicted_labels, confidence_scores = zip(*predictions)
+        df.loc[idx, 'predicted_label'] = predicted_labels
+        df.loc[idx, 'confidence'] = confidence_scores
         return df

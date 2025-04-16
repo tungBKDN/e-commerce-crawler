@@ -1,4 +1,7 @@
 import pandas as pd
+from collections import Counter
+from wordcloud import WordCloud
+import matplotlib.pyplot as plt
 
 def load_data(file_path: str = "./data/LABEL_clean_comments.csv") -> pd.DataFrame:
     """
@@ -31,7 +34,7 @@ def update_labeled(df: pd.DataFrame, annotations: list, file_name: str = "./data
     """
     for index, annotation in annotations:
         df.at[index, 'label'] = annotation
-        df.at[index, 'is_labeled'] = True
+        df.at[index, 'labeled'] = True
         df.at[index, 'confidence'] = 1
     # Save the updated DataFrame to a CSV file
     df.to_csv(file_name, index=False)
@@ -90,3 +93,81 @@ def remove_stopwords(text: str, stopwords: set) -> str:
     words = text.split()
     filtered_words = [word for word in words if word not in stopwords]
     return ' '.join(filtered_words)
+
+def prepare_data_traning(df: pd.DataFrame) -> dict:
+    """
+    Prepare data for training
+    """
+    # Get comment_nonsw if labeled is True
+    comments = df[df['labeled'] == True]['comment_nonsw'].tolist()
+    labels = df[df['labeled'] == True]['label'].tolist()
+    return {
+        "comments": comments,
+        "labels": labels
+    }
+
+def prepare_data_predict(df: pd.DataFrame):
+    """
+    Prepare data for prediction
+    """
+    # Get comment_nonsw from idx in df that is not labeled
+    idx = df[df['labeled'] != True].index.tolist()
+    comments = df.loc[idx, 'comment_nonsw'].tolist()
+    return {
+        "idx": idx,
+        "comments": comments
+    }
+
+def plot_confidence(df: pd.DataFrame):
+    """
+    Plot confidence scores
+    """
+    # Filter out rows where 'confidence' is NaN or not a number
+    df = df[df['confidence'].notna() & (df['confidence'] != 0)]
+    total_labeled = len(df[df['labeled'] == True])
+
+    mean_confidence = df['confidence'].mean()
+    med_confidence = df['confidence'].median()
+    print(f"Mean confidence: {mean_confidence}")
+    print(f"Median confidence: {med_confidence}")
+
+    # Append to file: ./data/history.csv
+    text_to_append = f"{total_labeled},{mean_confidence},{med_confidence}\n"
+    with open("./data/history.csv", "a") as file:
+        file.write(text_to_append)
+
+    # Plotting
+    plt.figure(figsize=(10, 6))
+    plt.hist(df['confidence'], bins=50, alpha=0.7, color='blue')
+    plt.title(f'Confidence Scores Distribution - Labeled: {str(total_labeled).zfill(4)} | {mean_confidence}, {med_confidence}')
+    plt.xlabel('Confidence Score')
+    plt.ylabel('Frequency')
+    plt.ylim(0, 5000)  # Set y-axis limits
+    plt.grid(axis='y', alpha=0.75)
+    plt.savefig(f"./images/confidence-{str(total_labeled).zfill(4)}.png", dpi=300, bbox_inches='tight')
+    plt.show()
+
+def get_significant_words(df: pd.DataFrame, n: int = 30, label = 0) -> dict:
+    """
+    Get significant words from the DataFrame
+    """
+    # Filter comments by label and labeled = True
+    filtered_comments = df[(df['labeled'] == True) & (df['label'] == label)]['comment_nonsw']
+
+    # Tokenize and count word frequencies
+    word_counter = Counter()
+    for comment in filtered_comments:
+        word_counter.update(comment.split())
+
+    # Get the top n significant words
+    significant_words = dict(word_counter.most_common(n))
+
+    # Plot a word cloud
+    wordcloud = WordCloud(width=800, height=400, background_color='white').generate_from_frequencies(significant_words)
+    plt.figure(figsize=(10, 6))
+    plt.imshow(wordcloud, interpolation='bilinear')
+    plt.axis('off')
+    plt.title(f"Top {n} Significant Words for Label {label}")
+    plt.savefig(f"./images/significant_words/significant_words_{label}.png", dpi=300, bbox_inches='tight')
+
+    return significant_words
