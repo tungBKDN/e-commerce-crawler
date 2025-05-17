@@ -2,6 +2,8 @@ import pandas as pd
 from collections import Counter
 from wordcloud import WordCloud
 import matplotlib.pyplot as plt
+import numpy as np
+from sklearn.metrics import confusion_matrix
 
 def load_data(file_path: str = "./data/LABEL_clean_comments.csv") -> pd.DataFrame:
     """
@@ -25,7 +27,7 @@ def random_pooling(df: pd.DataFrame, n: int = 20, random_state = 42) -> list:
     Randomly select n rows from the DataFrame.
     Return: list of indexes
     """
-    df = df[df['labeled'] != True].sample(n=n, random_state=random_state)
+    df = df[df['label'].isna()].sample(n=n, random_state=random_state)
     return df.index.tolist()
 
 def update_labeled(df: pd.DataFrame, annotations: list, file_name: str = "./data/LABEL_clean_comments.csv") -> pd.DataFrame:
@@ -99,8 +101,12 @@ def prepare_data_traning(df: pd.DataFrame) -> dict:
     Prepare data for training
     """
     # Get comment_nonsw if labeled is True
-    comments = df[df['labeled'] == True]['comment_nonsw'].tolist()
-    labels = df[df['labeled'] == True]['label'].tolist()
+    # comments = df[df['labeled'] == True]['comment_nonsw'].tolist()
+    # labels = df[df['labeled'] == True]['label'].tolist()
+
+    # [CHANGE]: Change the condition due to the column is changed
+    comments = df[df['labeled'] != None]['comment_nonsw'].tolist()
+    labels = df[df['labeled'] != None]['label'].tolist()
     return {
         "comments": comments,
         "labels": labels
@@ -111,7 +117,9 @@ def prepare_data_predict(df: pd.DataFrame):
     Prepare data for prediction
     """
     # Get comment_nonsw from idx in df that is not labeled
-    idx = df[df['labeled'] != True].index.tolist()
+    # idx = df[df['labeled'] != True].index.tolist()
+    # [CHANGE]: Change the condition due to the column is changed
+    idx = df[(df['labeled'] != True) & (df['label'].isna())].index.tolist()
     comments = df.loc[idx, 'comment_nonsw'].tolist()
     return {
         "idx": idx,
@@ -142,7 +150,7 @@ def plot_confidence(df: pd.DataFrame):
     plt.title(f'Confidence Scores Distribution - Labeled: {str(total_labeled).zfill(4)} | {mean_confidence}, {med_confidence}')
     plt.xlabel('Confidence Score')
     plt.ylabel('Frequency')
-    plt.ylim(0, 5000)  # Set y-axis limits
+    plt.ylim(0, 2000)  # Set y-axis limits
     plt.grid(axis='y', alpha=0.75)
     plt.savefig(f"./images/confidence-{str(total_labeled).zfill(4)}.png", dpi=300, bbox_inches='tight')
     plt.show()
@@ -163,7 +171,7 @@ def get_significant_words(df: pd.DataFrame, n: int = 30, label = 0) -> dict:
     significant_words = dict(word_counter.most_common(n))
 
     # Plot a word cloud
-    wordcloud = WordCloud(width=800, height=400, background_color='white').generate_from_frequencies(significant_words)
+    wordcloud = WordCloud(width=400, height=400, background_color='white').generate_from_frequencies(significant_words)
     plt.figure(figsize=(10, 6))
     plt.imshow(wordcloud, interpolation='bilinear')
     plt.axis('off')
@@ -171,3 +179,57 @@ def get_significant_words(df: pd.DataFrame, n: int = 30, label = 0) -> dict:
     plt.savefig(f"./images/significant_words/significant_words_{label}.png", dpi=300, bbox_inches='tight')
 
     return significant_words
+
+def prepare_test_data(df: pd.DataFrame) -> tuple:
+    """
+    Use labeled data to prepare test data
+    """
+    df = df[df['labeled'] == True]
+    comments = df['comment_nonsw'].tolist()
+    labels = df['label'].tolist()
+    return (comments, labels)
+
+def get_confusion_matrix(labels: list, pred: np.array, real_labels: np.array) -> np.array:
+    pred = np.array(pred, dtype=float).astype(int)
+    real_labels = np.array(real_labels, dtype=float).astype(int)
+    cm = confusion_matrix(real_labels, pred)
+    cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
+    cm = np.round(cm, 2)
+    return cm
+
+def plot_confusion_matrix(cm: np.array, labels: list, title: str = 'Confusion Matrix'):
+    """
+    Plot confusion matrix
+    """
+    plt.figure(figsize=(10, 8))
+    plt.imshow(cm, interpolation='nearest', cmap=plt.cm.Blues)
+    plt.title(title)
+    plt.colorbar()
+    tick_marks = np.arange(len(labels))
+    plt.xticks(tick_marks, labels, rotation=45)
+    plt.yticks(tick_marks, labels)
+
+    # Normalize the confusion matrix
+    cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
+    cm = np.round(cm, 2)
+
+    # Add text annotations
+    thresh = cm.max() / 2.
+    for i in range(len(labels)):
+        for j in range(len(labels)):
+            plt.text(j, i, f"{cm[i, j]:.2f}",
+                     horizontalalignment="center",
+                     color="white" if cm[i, j] > thresh else "black")
+
+    plt.ylabel('True label')
+    plt.xlabel('Predicted label')
+    plt.tight_layout()
+
+def fix_labels(df: pd.DataFrame, threshold: float = 0.75):
+    """
+    For rows in dataframe, if the confidence of that row is over 0.75, set the label to the predicted label but keep the labeled = None in case of a reverse
+    """
+    print("Fixing labels...")
+    df.loc[(df['confidence'] > threshold) & (df['labeled'] != True), 'label'] = df['predicted_label']
+    df.loc[(df['confidence'] > threshold) & (df['labeled'] != True), 'labeled'] = None
+    return df

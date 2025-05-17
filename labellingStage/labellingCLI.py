@@ -5,7 +5,7 @@ from activeLearning import EmotionClassifierNB
 # Vars
 df = u.load_data()
 labels = u.get_labels()
-ids = u.random_pooling(df, n=25)
+ids = u.random_pooling(df, n=30)
 
 annos = u.display(ids, df, labels)
 print("Updating...")
@@ -15,6 +15,13 @@ model = EmotionClassifierNB()
 training_data = u.prepare_data_traning(df)
 model.fit(training_data['comments'], training_data['labels'])
 df = model.predict_dataframe(df)
+
+# test_data, true_labels = u.prepare_test_data(df)
+# pred = model.predict(test_data)
+# cm = u.get_confusion_matrix(labels, pred, true_labels)
+# print("Confusion matrix:")
+# print(cm)
+# u.plot_confusion_matrix(cm, true_labels)
 
 # Saving
 df.to_csv("./data/LABEL_clean_comments.csv", index=False)
