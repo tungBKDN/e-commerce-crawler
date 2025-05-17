@@ -54,12 +54,37 @@ def get_labels(file_name: str = "./data/emotions.txt") -> list:
         print(f"File not found: {file_name}")
         return []  # Return an empty list if the file is not found
 
-def display(ids: list, df: pd.DataFrame, labels: list):
+def display(ids: list, df: pd.DataFrame, labels: list, ai_mode: bool = False):
     """
     Interactive display for input
     """
     total_comments = len(ids)
     annotations = []
+
+    if ai_mode:
+        """
+        This mode will print out the labels firts and then all next comments
+        """
+        print("\033[H\033[J", end="")  # ANSI escape sequence to clear the console
+        print("Labels:")
+        for j, label in enumerate(labels):
+            print(f"{j}. {label}")
+
+        # Print all comments
+        for i in range(total_comments):
+            print(">", df.iloc[ids[i]]['comment'])
+
+        user_input = input("\n LABEL: ")
+        user_input = user_input.split(",")
+        for i in range(total_comments):
+            if user_input[i].isdigit():
+                annotations.append((ids[i], user_input[i]))
+            else:
+                print("Invalid input. Please enter a number corresponding to the label.")
+                continue
+        return annotations
+
+
     for i in range(total_comments):
         print("\033[H\033[J", end="")  # ANSI escape sequence to clear the console
         print(f"\nComment {i + 1}/{total_comments}:\n")
@@ -101,12 +126,12 @@ def prepare_data_traning(df: pd.DataFrame) -> dict:
     Prepare data for training
     """
     # Get comment_nonsw if labeled is True
-    # comments = df[df['labeled'] == True]['comment_nonsw'].tolist()
-    # labels = df[df['labeled'] == True]['label'].tolist()
+    comments = df[df['labeled'] == True]['comment_nonsw'].tolist()
+    labels = df[df['labeled'] == True]['label'].tolist()
 
     # [CHANGE]: Change the condition due to the column is changed
-    comments = df[df['labeled'] != None]['comment_nonsw'].tolist()
-    labels = df[df['labeled'] != None]['label'].tolist()
+    # comments = df[df['labeled'] != None]['comment_nonsw'].tolist()
+    # labels = df[df['labeled'] != None]['label'].tolist()
     return {
         "comments": comments,
         "labels": labels
@@ -117,9 +142,9 @@ def prepare_data_predict(df: pd.DataFrame):
     Prepare data for prediction
     """
     # Get comment_nonsw from idx in df that is not labeled
-    # idx = df[df['labeled'] != True].index.tolist()
+    idx = df[df['labeled'] != True].index.tolist()
     # [CHANGE]: Change the condition due to the column is changed
-    idx = df[(df['labeled'] != True) & (df['label'].isna())].index.tolist()
+    # idx = df[(df['labeled'] != True) & (df['label'].isna())].index.tolist()
     comments = df.loc[idx, 'comment_nonsw'].tolist()
     return {
         "idx": idx,

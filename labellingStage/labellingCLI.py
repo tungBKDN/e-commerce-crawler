@@ -5,9 +5,9 @@ from activeLearning import EmotionClassifierNB
 # Vars
 df = u.load_data()
 labels = u.get_labels()
-ids = u.random_pooling(df, n=30)
+ids = u.random_pooling(df, n=50)
 
-annos = u.display(ids, df, labels)
+annos = u.display(ids, df, labels, ai_mode=True)
 print("Updating...")
 df = u.update_labeled(df, annos)
 
@@ -15,6 +15,9 @@ model = EmotionClassifierNB()
 training_data = u.prepare_data_traning(df)
 model.fit(training_data['comments'], training_data['labels'])
 df = model.predict_dataframe(df)
+
+# Fix labels
+# df = u.fix_labels(df, 0.75)
 
 # test_data, true_labels = u.prepare_test_data(df)
 # pred = model.predict(test_data)
