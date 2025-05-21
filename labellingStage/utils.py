@@ -175,7 +175,7 @@ def plot_confidence(df: pd.DataFrame):
     plt.title(f'Confidence Scores Distribution - Labeled: {str(total_labeled).zfill(4)} | {mean_confidence}, {med_confidence}')
     plt.xlabel('Confidence Score')
     plt.ylabel('Frequency')
-    plt.ylim(0, 2000)  # Set y-axis limits
+    plt.ylim(0, 250)  # Set y-axis limits
     plt.grid(axis='y', alpha=0.75)
     plt.savefig(f"./images/confidence-{str(total_labeled).zfill(4)}.png", dpi=300, bbox_inches='tight')
     plt.show()
