@@ -5,7 +5,7 @@ from activeLearning import EmotionClassifierNB
 # Vars
 df = u.load_data()
 labels = u.get_labels()
-ids = u.random_pooling(df, n=50, random_state=40)
+ids = u.random_pooling(df, n=40, random_state=40)
 
 annos = u.display(ids, df, labels, ai_mode=True)
 print("Updating...")
@@ -26,8 +26,8 @@ df = model.predict_dataframe(df)
 # print(cm)
 # u.plot_confusion_matrix(cm, true_labels)
 
-# Print the number of confident in range [0.5, 1)
-satisfied = df[(df['confidence'] >= 0.5) & (df['confidence'] < 1)]
+# Print the number of confident in range [0.4, 1)
+satisfied = df[(df['confidence'] >= 0.4) & (df['confidence'] < 1)]
 print(f"Number of confident samples: {len(satisfied)}")
 
 # Saving
